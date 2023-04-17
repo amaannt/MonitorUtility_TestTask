@@ -1,0 +1,15 @@
+D:\GitHub\MonitorUtility_TestTask\bin\Debug\net6.0\MonitorUtility_TestTask.exe
+D:\GitHub\MonitorUtility_TestTask\bin\Debug\net6.0\MonitorUtility_TestTask.deps.json
+D:\GitHub\MonitorUtility_TestTask\bin\Debug\net6.0\MonitorUtility_TestTask.runtimeconfig.json
+D:\GitHub\MonitorUtility_TestTask\bin\Debug\net6.0\MonitorUtility_TestTask.dll
+D:\GitHub\MonitorUtility_TestTask\bin\Debug\net6.0\MonitorUtility_TestTask.pdb
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.csproj.AssemblyReference.cache
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.GeneratedMSBuildEditorConfig.editorconfig
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.AssemblyInfoInputs.cache
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.AssemblyInfo.cs
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.csproj.CoreCompileInputs.cache
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.dll
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\refint\MonitorUtility_TestTask.dll
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.pdb
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\MonitorUtility_TestTask.genruntimeconfig.cache
+D:\GitHub\MonitorUtility_TestTask\obj\Debug\net6.0\ref\MonitorUtility_TestTask.dll
