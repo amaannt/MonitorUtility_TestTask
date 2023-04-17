@@ -1,20 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj": {}
+    "C:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj": {}
   },
   "projects": {
-    "D:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj": {
+    "C:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
+        "projectUniqueName": "C:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
         "projectName": "MonitorUtility_TestTask",
-        "projectPath": "D:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
-        "packagesPath": "C:\\Users\\amann\\.nuget\\packages\\",
-        "outputPath": "D:\\GitHub\\MonitorUtility_TestTask\\obj\\",
+        "projectPath": "C:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
+        "packagesPath": "C:\\Users\\Amaan Nathoo\\.nuget\\packages\\",
+        "outputPath": "C:\\GitHub\\MonitorUtility_TestTask\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
         "configFilePaths": [
-          "C:\\Users\\amann\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Amaan Nathoo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -55,7 +58,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.400\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+p5JrdX7LRIzUpCq/c3M6tihSsSvEzSwREjUJW9YREMVkf9gLFV64zFccPATDUag5WoXKSFVFmAC8uhDT2LnYg==",
+  "dgSpecHash": "65cFOpW61jiWVayJbBc0xfYeRNxuds8yTtn9NlSju46jjvLlDRpzHwi2NWhpFD5up3VX2Gt27Qxw3KWYoEw7Kg==",
   "success": true,
-  "projectFilePath": "D:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
+  "projectFilePath": "C:\\GitHub\\MonitorUtility_TestTask\\MonitorUtility_TestTask.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
