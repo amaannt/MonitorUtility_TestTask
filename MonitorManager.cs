@@ -12,6 +12,7 @@ namespace MonitorUtility_TestTask
         //Flag for when and if user quits the app
         internal static bool UserQuit;
         private List<Thread> MonitorThread;
+        private static List<string> MonitorProcessNames;
         public MonitorManager()
         {
             UserQuit = false;
@@ -21,9 +22,7 @@ namespace MonitorUtility_TestTask
         }
         private void InitUserInput()
         {
-            //start a new thread to detect escape key
-            InitQuitThread();
-
+            MonitorProcessNames = new List<string>();
             //runs until user presses 'q'
             while (!UserQuit)
             { 
@@ -34,18 +33,15 @@ namespace MonitorUtility_TestTask
                     UserQuit = true;
                     break;
                 }
+                //validate input
                 if (string.IsNullOrEmpty(pName))
                 {
                     Console.WriteLine("Invalid process name. Please try again.");
                     continue;
                 }
-                Process[] processes = Process.GetProcessesByName(pName);
-                if(processes.Length == 0)
-                {
-                    Console.WriteLine("Process not found! Try again!");
-                    continue;
-                }
-                Console.WriteLine(string.Format("Enter maximum lifetime for '{0}'(in minutes):", pName));
+                //get duration
+                Console.WriteLine($"Enter maximum lifetime for '{pName}'(in minutes):");
+                
                 if (!CancelableReadLine(out string input_pDuration))
                 {
                     UserQuit = true;
@@ -56,8 +52,8 @@ namespace MonitorUtility_TestTask
                 {
                     continue;
                 }
-
-                Console.WriteLine(string.Format("Enter monitoring frequency for '{0}'(in minutes):", pName));
+                //get check interval
+                Console.WriteLine($"Enter monitoring frequency for '{pName}'(in minutes):");
                 if (!CancelableReadLine(out string input_pfreq))
                 {
                     UserQuit = true;
@@ -68,78 +64,72 @@ namespace MonitorUtility_TestTask
                 {
                     continue;
                 }
-                //validate larger value
+                //check if already monitoring process
+                if (MonitorProcessNames.Contains(pName))
+                {
+                    Console.WriteLine($"Already Monitoring '{pName}'.\nPlease enter another process.");
+                    continue;
+                }
 
 
                 //add the method to run to a new thread
-                MonitorThread.Add(new Thread(() => MonitorProcessThread(pDuration, pMonitoringFrequency, pName, MonitorThread.Last())));
+                MonitorThread.Add(new Thread(() =>MonitorProcessThread(pDuration, pMonitoringFrequency, pName)));
+                MonitorProcessNames.Add(pName);
                 //start the freshly added thread
                 MonitorThread.Last().Start();
 
-                Console.WriteLine(string.Format("Started tracking '{0} for {1} every {2} minutes):", pName, pDuration, pMonitoringFrequency));
+                Console.WriteLine($"Started tracking '{pName} for {pDuration} minute(s) every {pMonitoringFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
 
             }
         }
 
-        private void MonitorProcessThread(int processDuration, int MonitorFrequency, string processName, Thread currThread)
+        private static Task MonitorProcessThread(int processDuration, int MonitorFrequency, string processName)
         {
-            DateTime threadStartTime = DateTime.Now;
-            DateTime LastCheckTime = threadStartTime;
-            bool StartCheck = false;
+            DateTime monitorStartTime = DateTime.Now;
+            //DateTime LastCheckTime = monitorStartTime;
+            //bool StartCheck = false;
+           // bool resetStartTime = false;
             while (!UserQuit)
             {
-                
-                if (!StartCheck)
+                Process[] processes = Process.GetProcessesByName(processName);
+                if (processes.Length == 0)
                 {
-                    int MinutesElapsedSinceLastCheck = DateTime.Now.Minute - LastCheckTime.Minute;
-                    StartCheck = MinutesElapsedSinceLastCheck >= MonitorFrequency;
+                    monitorStartTime = DateTime.Now;
+                    //LastCheckTime = monitorStartTime;
                 }
-                if (StartCheck)
+                //n minutes in seconds to ms : n * 60 * 1000
+                Thread.Sleep(MonitorFrequency * 60 * 1000);
+
+                //get time elapsed since the start of the thread
+                TimeSpan elapsedTime = DateTime.Now - monitorStartTime;
+
+                //if the total amount of minutes is greater than the time duration alotted for the process, it is shutdown
+                if (elapsedTime.TotalMinutes >= processDuration)
                 {
-                    LastCheckTime = DateTime.Now;
-                    //get time elapsed since the start of the thread
-                    TimeSpan elapsedTime = DateTime.Now - threadStartTime;
-
-                    //if the total amount of minutes is greater than the time duration alotted for the process, it is shutdown
-                    if (elapsedTime.TotalMinutes >= processDuration)
+                    processes = Process.GetProcessesByName(processName);
+                    if (processes.Length > 0)
                     {
-                        Process[] processes = Process.GetProcessesByName(processName);
-                        if (processes.Length > 0)
+                        foreach (Process process in processes)
                         {
-                            
-                            foreach(Process process in processes)
-                            {
-                                Console.WriteLine($"Killing process {process.ProcessName} (PID: {process.Id})...");
-                                process.Kill();
-                            } 
-                            //remove thread from list
-                            //MonitorThread.Remove(currThread);
-                            //break out of the while loop and end the thread
-                           // break;
+                            Console.WriteLine($"Killing process {process.ProcessName} (PID: {process.Id}) at {DateTime.Now.ToString("HH:mm:ss")}");
+                            process.Kill();
                         }
+                        //remove thread from list
+                        //MonitorThread.Remove(currThread);
+                        //break out of the while loop and end the thread
+                        //break;
                     }
-                    StartCheck = false;
-                } 
+                    else
+                    {
+                        Console.WriteLine($"No '{processName}' available yet.");
+                    }
+                }
             }
+            return Task.CompletedTask;
         }
 
-        private void InitQuitThread()
-        {
-            Console.WriteLine("Press escape to exit,");
-            //Thread thread = new(QuitDetection);
-            //thread.Start();
-        }
 
-        private void QuitDetection(object? obj)
-        {
-            do
-            {
-                Thread.Sleep(5);
-            }
-            while (Console.ReadKey(true).Key != ConsoleKey.Escape);
-            
-            UserQuit = true;
-        }
+     
 
         private bool HandleIntegerInputValidation(string? inputString, out int IntegerResult)
         {
@@ -161,6 +151,7 @@ namespace MonitorUtility_TestTask
             }
             return true;
         }
+        //custom function for user input and 
         //Returns null if ESC key pressed during input.
         public static bool CancelableReadLine(out string value)
         {
