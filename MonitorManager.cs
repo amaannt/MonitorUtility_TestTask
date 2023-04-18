@@ -10,27 +10,33 @@ namespace MonitorUtility_TestTask
     internal class MonitorManager
     {
         //Flag for when and if user quits the app
-        internal static bool UserQuit;
+        //internal static bool UserQuit;
         private List<Thread> MonitorThread;
+
         private static List<string> MonitorProcessNames;
+        private static List<ManualResetEvent> MonitorProcessesWaitEvent;
         public MonitorManager()
         {
-            UserQuit = false;
             //initialize thread list
             MonitorThread = new List<Thread>();
+            MonitorProcessesWaitEvent = new List<ManualResetEvent>();
             InitUserInput();
+            if(MonitorThread.Count > 0)
+            {
+                Console.WriteLine("Please wait for thread to shutdown...");
+            }
         }
         private void InitUserInput()
         {
             MonitorProcessNames = new List<string>();
-            //runs until user presses 'q'
-            while (!UserQuit)
+            //Can run multiple processes
+            //runs until user presses 'esc'
+            while (true)
             { 
                 //get process name
-                Console.WriteLine("Enter process name:");
+                Console.WriteLine("Enter a process name to track:");
                 if(!CancelableReadLine(out string pName))
                 {
-                    UserQuit = true;
                     break;
                 }
                 //validate input
@@ -44,7 +50,6 @@ namespace MonitorUtility_TestTask
                 
                 if (!CancelableReadLine(out string input_pDuration))
                 {
-                    UserQuit = true;
                     break;
                 }
                 int pDuration = -1;
@@ -55,8 +60,7 @@ namespace MonitorUtility_TestTask
                 //get check interval
                 Console.WriteLine($"Enter monitoring frequency for '{pName}'(in minutes):");
                 if (!CancelableReadLine(out string input_pfreq))
-                {
-                    UserQuit = true;
+                { 
                     break;
                 }
                 int pMonitoringFrequency = -1;
@@ -71,67 +75,112 @@ namespace MonitorUtility_TestTask
                     continue;
                 }
 
-
+                //add wait event
+                MonitorProcessesWaitEvent.Add(new ManualResetEvent(false)); 
                 //add the method to run to a new thread
-                MonitorThread.Add(new Thread(() =>MonitorProcessThread(pDuration, pMonitoringFrequency, pName)));
+                MonitorThread.Add(new Thread(() =>MonitorProcessThread(pDuration, pMonitoringFrequency, pName, MonitorProcessesWaitEvent.Last())));
                 MonitorProcessNames.Add(pName);
                 //start the freshly added thread
                 MonitorThread.Last().Start();
-
-                Console.WriteLine($"Started tracking '{pName} for {pDuration} minute(s) every {pMonitoringFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
+                Thread.Sleep(50);
+                //Console.WriteLine($"Started tracking '{pName} for {pDuration} minute(s) every {pMonitoringFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
 
             }
-        }
-
-        private static Task MonitorProcessThread(int processDuration, int MonitorFrequency, string processName)
+        } 
+        private static Task MonitorProcessThread(int processDuration, int MonitorFrequency, string processName, ManualResetEvent threadWaitEvent)
         {
             DateTime monitorStartTime = DateTime.Now;
+
+            int instanceTracker = 0;
+            Console.WriteLine($"Started Monitoring instances of {processName} at {monitorStartTime}");
+            Dictionary<int, MonitorProcess> Processes = new Dictionary<int, MonitorProcess>();
             //DateTime LastCheckTime = monitorStartTime;
             //bool StartCheck = false;
-           // bool resetStartTime = false;
-            while (!UserQuit)
+            // bool resetStartTime = false;
+            while (true)
             {
-                Process[] processes = Process.GetProcessesByName(processName);
-                if (processes.Length == 0)
+                //get all the processes by name
+                Process[] currentprocesses = Process.GetProcessesByName(processName);
+                //
+                if (currentprocesses.Length == 0)
                 {
-                    monitorStartTime = DateTime.Now;
-                    //LastCheckTime = monitorStartTime;
+                    Console.WriteLine($"No '{processName}' available yet.");
                 }
-                //n minutes in seconds to ms : n * 60 * 1000
-                Thread.Sleep(MonitorFrequency * 60 * 1000);
-
-                //get time elapsed since the start of the thread
-                TimeSpan elapsedTime = DateTime.Now - monitorStartTime;
-
-                //if the total amount of minutes is greater than the time duration alotted for the process, it is shutdown
-                if (elapsedTime.TotalMinutes >= processDuration)
+                else
                 {
-                    processes = Process.GetProcessesByName(processName);
-                    if (processes.Length > 0)
+                    //check if instance is the same as before
+                    if (instanceTracker != currentprocesses.Length)
                     {
-                        foreach (Process process in processes)
+                        instanceTracker = currentprocesses.Length;
+                        Console.WriteLine($"{currentprocesses.Length} instance(s) of '{processName}' detected.");
+                    }
+                    //if dictionary with key value pairs is empty
+                    //fill it up with available processes
+                    if (Processes.Count == 0)
+                    {
+                        for (int i = 0; i < currentprocesses.Length; i++)
                         {
-                            Console.WriteLine($"Killing process {process.ProcessName} (PID: {process.Id}) at {DateTime.Now.ToString("HH:mm:ss")}");
-                            process.Kill();
+                            Processes.Add(currentprocesses[i].Id, new MonitorProcess(currentprocesses[i].Id, processName, DateTime.Now, DateTime.Now));
+
+                            Console.WriteLine($"Started tracking {currentprocesses[i].Id} for {processDuration} minute(s) every {MonitorFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
                         }
-                        //remove thread from list
-                        //MonitorThread.Remove(currThread);
-                        //break out of the while loop and end the thread
-                        //break;
                     }
                     else
                     {
-                        Console.WriteLine($"No '{processName}' available yet.");
+                        //if it is not empty, add the processes that do no exist
+                        for (int i = 0; i < currentprocesses.Length; i++)
+                        {
+                            if (!Processes.ContainsKey(currentprocesses[i].Id))
+                            {
+                                Processes.Add(currentprocesses[i].Id, new MonitorProcess(currentprocesses[i].Id, processName, DateTime.Now, DateTime.Now));
+                                Console.WriteLine($"Started tracking {currentprocesses[i].Id}  for {processDuration} minute(s) every {MonitorFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
+                            }
+                        }
+                    }
+
+                } 
+
+                //if wait event is signaled that means we quit this thread immediately without having to wait for timer to run out
+                if (threadWaitEvent.WaitOne(MonitorFrequency * 60 * 1000))
+                {
+                    break;
+                }
+
+                if (Processes.Count == 0)
+                {
+                    continue;
+                }
+                //run through processes 
+                foreach (KeyValuePair<int, MonitorProcess> process in Processes)
+                {
+                    //get the start time of process
+                    DateTime processStartTime = process.Value.Process_StartTime; 
+
+                    //get current uptime duration of process
+                    TimeSpan elapsedTime = DateTime.Now - processStartTime;
+                    //in case the process duration has been surpassed, process is then shutdown and removed from dictionary 
+                    if (elapsedTime.TotalMinutes >= processDuration)
+                    {
+                        Process proc = Process.GetProcessById(process.Key);
+                        Console.WriteLine($"Killing process {proc.ProcessName} (PID: {proc.Id}) at {DateTime.Now.ToString("HH:mm:ss")}");
+                        proc.Kill();
+                        //let the process end
+                        Thread.Sleep(50);
+                        Processes.Remove(process.Key);
                     }
                 }
+
             }
+            Console.WriteLine($"Shutting down '{processName}' thread");
+
             return Task.CompletedTask;
-        }
+        } 
 
 
-     
 
-        private bool HandleIntegerInputValidation(string? inputString, out int IntegerResult)
+
+
+    private bool HandleIntegerInputValidation(string? inputString, out int IntegerResult)
         {
             if (string.IsNullOrEmpty(inputString))
             {
@@ -197,6 +246,11 @@ namespace MonitorUtility_TestTask
                 }
             }
 
+            if (key.Key == ConsoleKey.Escape)
+            {
+                SignalAndQuitAllThreads();
+                return false;
+            }
             if (key.Key == ConsoleKey.Enter)
             {
                 Console.WriteLine();
@@ -205,5 +259,13 @@ namespace MonitorUtility_TestTask
             }
             return false;
         }
+
+        private static void SignalAndQuitAllThreads()
+        {
+            foreach (ManualResetEvent waitEvent in MonitorProcessesWaitEvent)
+            {
+                waitEvent.Set();
+            }
+        }
     }
-} 
+}
