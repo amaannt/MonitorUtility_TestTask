@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace MonitorUtility_TestTask
 {
+    //Manage an instance of process Monitor
     internal class MonitorManager
     {
         // Log file
@@ -15,22 +16,26 @@ namespace MonitorUtility_TestTask
         //internal static bool UserQuit;
         private List<Thread> MonitorThread;
 
-        private static List<string> MonitorProcessNames;
-        private static List<ManualResetEvent> MonitorProcessesWaitEvent;
+        private static List<string> MonitorProcessNames = new();
+        private static List<ManualResetEvent> MonitorProcessesWaitEvent = new();
+
+        //ctor
         public MonitorManager()
         {
             //initialize thread list
             MonitorThread = new List<Thread>();
-            MonitorProcessesWaitEvent = new List<ManualResetEvent>();
+            
             InitUserInput();
             if(MonitorThread.Count > 0)
             {
                 Console.WriteLine("Please wait for thread to shutdown...");
             }
         }
+
+        //Start receiving user input and detection once process is given       
         private void InitUserInput()
         {
-            MonitorProcessNames = new List<string>();
+            
             //Can run multiple processes
             //runs until user presses 'esc'
             while (true)
@@ -47,9 +52,15 @@ namespace MonitorUtility_TestTask
                     Console.WriteLine("Invalid process name. Please try again.");
                     continue;
                 }
+                //check if already monitoring process
+                if (MonitorProcessNames.Contains(pName))
+                {
+                    Console.WriteLine($"Already Monitoring '{pName}'.\nPlease enter another process.");
+                    continue;
+                }
+
                 //get duration
-                Console.WriteLine($"Enter maximum lifetime for '{pName}'(in minutes):");
-                
+                Console.WriteLine($"Enter maximum lifetime for '{pName}'(in minutes):");                
                 if (!CancelableReadLine(out string input_pDuration))
                 {
                     break;
@@ -59,7 +70,8 @@ namespace MonitorUtility_TestTask
                 {
                     continue;
                 }
-                //get check interval
+
+                //get monitor frequency
                 Console.WriteLine($"Enter monitoring frequency for '{pName}'(in minutes):");
                 if (!CancelableReadLine(out string input_pfreq))
                 { 
@@ -70,40 +82,38 @@ namespace MonitorUtility_TestTask
                 {
                     continue;
                 }
-                //check if already monitoring process
-                if (MonitorProcessNames.Contains(pName))
-                {
-                    Console.WriteLine($"Already Monitoring '{pName}'.\nPlease enter another process.");
-                    continue;
-                }
 
-                //add wait event
-                MonitorProcessesWaitEvent.Add(new ManualResetEvent(false)); 
+                //add wait event to let thread be canceleable anytime 
+                MonitorProcessesWaitEvent.Add(new ManualResetEvent(false));
+
                 //add the method to run to a new thread
                 MonitorThread.Add(new Thread(() =>MonitorProcessThread(pDuration, pMonitoringFrequency, pName, MonitorProcessesWaitEvent.Last())));
-                MonitorProcessNames.Add(pName);
-                //start the freshly added thread
-                MonitorThread.Last().Start();
-                Thread.Sleep(50);
-                //Console.WriteLine($"Started tracking '{pName} for {pDuration} minute(s) every {pMonitoringFrequency} minute(s) at {DateTime.Now.ToString("HH:mm:ss")}.");
 
+                //Add Name to process names just to track process names
+                MonitorProcessNames.Add(pName);
+
+                //start the newly added thread to monitor given process
+                MonitorThread.Last().Start();
             }
         } 
-        private static Task MonitorProcessThread(int processDuration, int MonitorFrequency, string processName, ManualResetEvent threadWaitEvent)
+
+        //Thread to monitor process and cancel when needed
+        private static void MonitorProcessThread(int processDuration, int MonitorFrequency, string processName, ManualResetEvent threadWaitEvent)
         {
             DateTime monitorStartTime = DateTime.Now;
 
             int instanceTracker = 0;
             Console.WriteLine($"Started Monitoring instances of {processName} at {monitorStartTime}");
+
+            //tracks process object by id
             Dictionary<int, MonitorProcess> Processes = new Dictionary<int, MonitorProcess>();
-            //DateTime LastCheckTime = monitorStartTime;
-            //bool StartCheck = false;
-            // bool resetStartTime = false;
+            
+            //loop runs forever to track processes which may start up later
             while (true)
             {
                 //get all the processes by name
                 Process[] currentprocesses = Process.GetProcessesByName(processName);
-                //
+                //incase no processes are found
                 if (currentprocesses.Length == 0)
                 {
                     Console.WriteLine($"Started Monitoring but no '{processName}' available yet.");
@@ -116,6 +126,7 @@ namespace MonitorUtility_TestTask
                         instanceTracker = currentprocesses.Length;
                         Console.WriteLine($"{currentprocesses.Length} instance(s) of '{processName}' detected.");
                     }
+
                     //if dictionary with key value pairs is empty
                     //fill it up with available processes
                     if (Processes.Count == 0)
@@ -147,12 +158,13 @@ namespace MonitorUtility_TestTask
                 {
                     break;
                 }
-
+                //incase no process exists we just go back to the top of the loop
                 if (Processes.Count == 0)
                 {
                     continue;
                 }
-                //run through processes 
+
+                //run through processes and check if their time has run out
                 foreach (KeyValuePair<int, MonitorProcess> process in Processes)
                 {
                     //get the start time of process
@@ -170,8 +182,9 @@ namespace MonitorUtility_TestTask
                         proc.Kill();
 
                         //log to text file 
-                        string LogString = $"Killed process with name: {proc.ProcessName} and ID: {proc.Id} at {killTime}";
-                        File.WriteAllText(LogFileNamePath, LogString);
+                        string LogString = $"\nKilled process with name: {proc.ProcessName} and ID: {proc.Id} at {killTime}";
+
+                        File.AppendAllTextAsync(LogFileNamePath, LogString);
                         //let the process end
                         Thread.Sleep(50);
                         Processes.Remove(process.Key);
@@ -180,8 +193,7 @@ namespace MonitorUtility_TestTask
 
             }
             Console.WriteLine($"Shutting down '{processName}' thread");
-
-            return Task.CompletedTask;
+             
         } 
 
 
