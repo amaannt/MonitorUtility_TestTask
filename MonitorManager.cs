@@ -9,6 +9,8 @@ namespace MonitorUtility_TestTask
 {
     internal class MonitorManager
     {
+        // Log file
+        private const string LogFileNamePath = "ProcessLog.txt";
         //Flag for when and if user quits the app
         //internal static bool UserQuit;
         private List<Thread> MonitorThread;
@@ -104,7 +106,7 @@ namespace MonitorUtility_TestTask
                 //
                 if (currentprocesses.Length == 0)
                 {
-                    Console.WriteLine($"No '{processName}' available yet.");
+                    Console.WriteLine($"Started Monitoring but no '{processName}' available yet.");
                 }
                 else
                 {
@@ -162,8 +164,14 @@ namespace MonitorUtility_TestTask
                     if (elapsedTime.TotalMinutes >= processDuration)
                     {
                         Process proc = Process.GetProcessById(process.Key);
-                        Console.WriteLine($"Killing process {proc.ProcessName} (PID: {proc.Id}) at {DateTime.Now.ToString("HH:mm:ss")}");
+                        string killTime = DateTime.Now.ToString("HH:mm:ss");
+                        Console.WriteLine($"Killing process {proc.ProcessName} (PID: {proc.Id}) at {killTime}");
+                        //Add to log file
                         proc.Kill();
+
+                        //log to text file 
+                        string LogString = $"Killed process with name: {proc.ProcessName} and ID: {proc.Id} at {killTime}";
+                        File.WriteAllText(LogFileNamePath, LogString);
                         //let the process end
                         Thread.Sleep(50);
                         Processes.Remove(process.Key);
